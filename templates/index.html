@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA Stacking Ensemble Scouting Dashboard</title>
+    
+    <!-- Import Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --card-bg: rgba(22, 30, 49, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-color: #f3f4f6;
+            --text-muted: #9ca3af;
+            --primary: #4facfe;
+            --primary-glow: rgba(79, 172, 254, 0.4);
+            --secondary: #00f2fe;
+            --elite-color: #10b981;
+            --elite-glow: rgba(16, 185, 129, 0.4);
+            --recruit-color: #ef4444;
+            --recruit-glow: rgba(239, 68, 68, 0.4);
+            --font-display: 'Outfit', sans-serif;
+            --font-body: 'Inter', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(79, 172, 254, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(0, 242, 254, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-color);
+            font-family: var(--font-body);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 2rem 4rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(11, 15, 25, 0.6);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-section h1 {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-section p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 4px;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.6rem 1.4rem;
+            font-family: var(--font-display);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 25px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #0b0f19;
+            box-shadow: 0 4px 15px var(--primary-glow);
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dashboard Grid Layout */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr 1.2fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1400px) {
+            .dashboard-grid {
+                grid-template-columns: 1.2fr 1fr;
+            }
+            .dashboard-grid > *:last-child {
+                grid-column: span 2;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            .dashboard-grid > * {
+                grid-column: span 1 !important;
+            }
+            header {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+        }
+
+        /* Glassmorphism Card Style */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            border-left: 4px solid var(--primary);
+            padding-left: 10px;
+            color: var(--text-color);
+        }
+
+        /* Inputs Column Styling */
+        .slider-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+
+        @media (max-width: 500px) {
+            .slider-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .slider-val {
+            color: var(--primary);
+            font-family: var(--font-display);
+            font-weight: 700;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary-glow);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .dropdown-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 0.75rem 1rem;
+            border-radius: 10px;
+            outline: none;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px var(--primary-glow);
+        }
+
+        /* Results / Center Column */
+        .results-section {
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .gauge-outer {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin: 1.5rem auto;
+        }
+
+        .gauge-svg {
+            transform: rotate(-90deg);
+            width: 100%;
+            height: 100%;
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.05);
+            stroke-width: 16;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke: url(#gauge-gradient);
+            stroke-width: 16;
+            stroke-linecap: round;
+            stroke-dasharray: 691; /* 2 * PI * 110 radius */
+            stroke-dashoffset: 691;
+            transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gauge-pct {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .gauge-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-elite {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--elite-color);
+            color: var(--elite-color);
+            padding: 0.6rem 2rem;
+            border-radius: 30px;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px var(--elite-glow);
+            animation: pulse-elite 2.5s infinite alternate;
+        }
+
+        .badge-recruit {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--recruit-color);
+            color: var(--recruit-color);
+            padding: 0.6rem 2rem;
+            border-radius: 30px;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            box-shadow: 0 0 15px var(--recruit-glow);
+            animation: pulse-recruit 2.5s infinite alternate;
+        }
+
+        @keyframes pulse-elite {
+            0% { box-shadow: 0 0 8px var(--elite-glow); }
+            100% { box-shadow: 0 0 22px var(--elite-glow); }
+        }
+
+        @keyframes pulse-recruit {
+            0% { box-shadow: 0 0 8px var(--recruit-glow); }
+            100% { box-shadow: 0 0 22px var(--recruit-glow); }
+        }
+
+        .scout-metrics {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            margin-top: 1rem;
+        }
+
+        .metric-bar-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.85rem;
+        }
+
+        .metric-bar-label {
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .metric-bar-val {
+            font-weight: 600;
+        }
+
+        .metric-track {
+            background: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 5px;
+            overflow: hidden;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .metric-fill {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            height: 100%;
+            border-radius: 5px;
+            width: 0;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Charts Column Styling */
+        .chart-carousel {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .chart-container {
+            width: 100%;
+            aspect-ratio: 4/3;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            display: none;
+        }
+
+        .chart-img.active {
+            display: block;
+        }
+
+        .carousel-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .carousel-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .carousel-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .carousel-indicator {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Tab 2: Model Comparisons Styles */
+        .comparisons-container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1100px) {
+            .comparisons-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 1rem;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-color);
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.9rem;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            color: var(--text-color);
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .highlight-row {
+            background: rgba(79, 172, 254, 0.05);
+        }
+
+        .highlight-row td {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .badge-metric {
+            background: rgba(79, 172, 254, 0.15);
+            color: var(--primary);
+            padding: 2px 8px;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        /* Tab 3: Stacking Concept Architecture Diagram */
+        .diagram-card {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+            text-align: center;
+        }
+
+        .step-cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .step-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .step-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .step-num {
+            display: inline-flex;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #0b0f19;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: 800;
+            font-family: var(--font-display);
+        }
+
+        .step-title {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-color);
+        }
+
+        .step-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .step-warn {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+
+        /* SVG Flow Chart */
+        .flowchart-svg {
+            max-width: 1000px;
+            width: 100%;
+            height: auto;
+            margin: 2rem 0;
+            background: rgba(255,255,255,0.01);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-section">
+            <h1>SCOUT-STACK ENSEMBLE</h1>
+            <p>FIFA 23 Predictive Player Calibration Engine</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'predictor')">Scouting Predictor</button>
+            <button class="tab-btn" onclick="switchTab(event, 'comparisons')">Model Evaluation</button>
+            <button class="tab-btn" onclick="switchTab(event, 'architecture')">How Stacking Works</button>
+        </div>
+    </header>
+
+    <main class="container">
+        
+        <!-- Tab 1: Scout Predictor Dashboard -->
+        <div id="predictor" class="tab-content active">
+            <div class="dashboard-grid">
+                
+                <!-- Left Column: Inputs Panel -->
+                <div class="card">
+                    <div class="card-title">Player Scouting Metrics</div>
+                    
+                    <div class="slider-grid">
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Age</span>
+                                <span class="slider-val" id="age_val">24</span>
+                            </div>
+                            <input type="range" id="age" min="16" max="42" value="24" oninput="updateVal('age')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Height (cm)</span>
+                                <span class="slider-val" id="height_cm_val">175</span>
+                            </div>
+                            <input type="range" id="height_cm" min="150" max="205" value="175" oninput="updateVal('height_cm')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Weight (kg)</span>
+                                <span class="slider-val" id="weight_kg_val">70</span>
+                            </div>
+                            <input type="range" id="weight_kg" min="50" max="100" value="70" oninput="updateVal('weight_kg')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Pace</span>
+                                <span class="slider-val" id="pace_val">75</span>
+                            </div>
+                            <input type="range" id="pace" min="10" max="99" value="75" oninput="updateVal('pace')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Shooting</span>
+                                <span class="slider-val" id="shooting_val">70</span>
+                            </div>
+                            <input type="range" id="shooting" min="10" max="99" value="70" oninput="updateVal('shooting')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Passing</span>
+                                <span class="slider-val" id="passing_val">72</span>
+                            </div>
+                            <input type="range" id="passing" min="10" max="99" value="72" oninput="updateVal('passing')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Dribbling</span>
+                                <span class="slider-val" id="dribbling_val">76</span>
+                            </div>
+                            <input type="range" id="dribbling" min="10" max="99" value="76" oninput="updateVal('dribbling')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Defending</span>
+                                <span class="slider-val" id="defending_val">55</span>
+                            </div>
+                            <input type="range" id="defending" min="10" max="99" value="55" oninput="updateVal('defending')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Physic</span>
+                                <span class="slider-val" id="physic_val">68</span>
+                            </div>
+                            <input type="range" id="physic" min="10" max="99" value="68" oninput="updateVal('physic')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Weak Foot</span>
+                                <span class="slider-val" id="weak_foot_val">3</span>
+                            </div>
+                            <input type="range" id="weak_foot" min="1" max="5" value="3" oninput="updateVal('weak_foot')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Skill Moves</span>
+                                <span class="slider-val" id="skill_moves_val">3</span>
+                            </div>
+                            <input type="range" id="skill_moves" min="1" max="5" value="3" oninput="updateVal('skill_moves')">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span>Int. Reputation</span>
+                                <span class="slider-val" id="international_reputation_val">1</span>
+                            </div>
+                            <input type="range" id="international_reputation" min="1" max="5" value="1" oninput="updateVal('international_reputation')">
+                        </div>
+                    </div>
+                    
+                    <div class="dropdown-grid">
+                        <div class="input-group">
+                            <label for="preferred_foot">Preferred Foot</label>
+                            <select id="preferred_foot" onchange="runPrediction()">
+                                <option value="Right">Right</option>
+                                <option value="Left">Left</option>
+                            </select>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="body_type">Body Type</label>
+                            <select id="body_type" onchange="runPrediction()">
+                                <option value="Normal (170-185)">Normal</option>
+                                <option value="Lean (170-185)">Lean</option>
+                                <option value="Stocky (170-185)">Stocky</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="model_selector">Model Selector</label>
+                        <select id="model_selector" onchange="runPrediction()">
+                            <option value="Stacking Ensemble">Stacking Ensemble (Level-1 Blended)</option>
+                            <option value="Random Forest">Random Forest Classifier (Level-0 Base)</option>
+                            <option value="Decision Tree">Decision Tree Classifier (Level-0 Base)</option>
+                            <option value="Logistic Regression">Logistic Regression (Level-0 Base)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Middle Column: Calibration Output Panel -->
+                <div class="card results-section">
+                    <div class="card-title">Model Predictions</div>
+                    
+                    <div class="gauge-outer">
+                        <svg class="gauge-svg" viewBox="0 0 240 240">
+                            <defs>
+                                <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="#4facfe" />
+                                    <stop offset="100%" stop-color="#00f2fe" />
+                                </linearGradient>
+                            </defs>
+                            <circle class="gauge-bg" cx="120" cy="120" r="110" />
+                            <circle class="gauge-fill" id="prob-fill" cx="120" cy="120" r="110" />
+                        </svg>
+                        <div class="gauge-text">
+                            <span class="gauge-pct" id="prob-pct">0%</span>
+                            <span class="gauge-label" id="model-lbl">Stacking</span>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <div id="badge-container">
+                            <span class="badge-recruit" id="elite-badge">RECRUIT CLASS</span>
+                        </div>
+                    </div>
+                    
+                    <div class="scout-metrics">
+                        <div style="border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                            <div class="metric-bar-row">
+                                <span class="metric-bar-label">Logistic Regression Base</span>
+                                <span class="metric-bar-val" id="lr-val">0.0%</span>
+                            </div>
+                            <div class="metric-track"><div class="metric-fill" id="lr-fill"></div></div>
+                        </div>
+                        
+                        <div>
+                            <div class="metric-bar-row">
+                                <span class="metric-bar-label">Decision Tree Base</span>
+                                <span class="metric-bar-val" id="dt-val">0.0%</span>
+                            </div>
+                            <div class="metric-track"><div class="metric-fill" id="dt-fill"></div></div>
+                        </div>
+                        
+                        <div>
+                            <div class="metric-bar-row">
+                                <span class="metric-bar-label">Random Forest Base</span>
+                                <span class="metric-bar-val" id="rf-val">0.0%</span>
+                            </div>
+                            <div class="metric-track"><div class="metric-fill" id="rf-fill"></div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column: Visual Charts -->
+                <div class="card">
+                    <div class="card-title">Performance Visualizations</div>
+                    
+                    <div class="chart-carousel">
+                        <div class="chart-container">
+                            <img src="/plots/model_comparison.png" class="chart-img active" id="chart-0" alt="Model Comparison">
+                            <img src="/plots/confusion_matrices.png" class="chart-img" id="chart-1" alt="Confusion Matrices">
+                            <img src="/plots/roc_curves.png" class="chart-img" id="chart-2" alt="ROC Curves">
+                            <img src="/plots/precision_recall_curves.png" class="chart-img" id="chart-3" alt="Precision-Recall Curves">
+                            <img src="/plots/rf_feature_importance.png" class="chart-img" id="chart-4" alt="Feature Importance">
+                            <img src="/plots/correlation_heatmap.png" class="chart-img" id="chart-5" alt="Correlation Heatmap">
+                        </div>
+                        
+                        <div class="carousel-controls">
+                            <button class="carousel-btn" onclick="prevChart()">Previous Chart</button>
+                            <span class="carousel-indicator" id="carousel-ind">1 / 6</span>
+                            <button class="carousel-btn" onclick="nextChart()">Next Chart</button>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+        
+        <!-- Tab 2: Model Comparisons Tab -->
+        <div id="comparisons" class="tab-content">
+            <div class="card" style="margin-bottom: 2rem;">
+                <div class="card-title">Ensemble Metric Table</div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Model</th>
+                                <th>Accuracy</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1-score</th>
+                                <th>ROC-AUC (AUC)</th>
+                                <th>Training Time</th>
+                                <th>Prediction Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Logistic Regression (Level-0)</td>
+                                <td>92.46%</td>
+                                <td>92.84%</td>
+                                <td>92.84%</td>
+                                <td>92.84%</td>
+                                <td>0.9775</td>
+                                <td>0.0657s</td>
+                                <td>0.0005s</td>
+                            </tr>
+                            <tr>
+                                <td>Decision Tree (Level-0)</td>
+                                <td>95.02%</td>
+                                <td>96.58%</td>
+                                <td>93.86%</td>
+                                <td>95.20%</td>
+                                <td>0.9826</td>
+                                <td>0.0625s</td>
+                                <td>0.0004s</td>
+                            </tr>
+                            <tr>
+                                <td>Random Forest (Level-0)</td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>1.0000</td>
+                                <td>0.4866s</td>
+                                <td>0.0157s</td>
+                            </tr>
+                            <tr class="highlight-row">
+                                <td>Stacking Ensemble (Level-1) <span class="badge-metric">Blended</span></td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>99.87%</td>
+                                <td>1.0000</td>
+                                <td>2.9628s</td>
+                                <td>0.0095s</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="comparisons-container">
+                <div class="card">
+                    <div class="card-title">Ensemble Analysis Discussion</div>
+                    <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-muted);">
+                        In this classification setup, the base model <strong>Random Forest</strong> achieved an extremely high performance level ($F_1 = 99.87\%$). Because the Random Forest base model was extremely dominant, our Level-1 Logistic Regression meta-model naturally learned to place a heavy coefficient weight (near $1.0$) on the Random Forest predictions, and near-zero weights on the Decision Tree and Logistic Regression outputs.
+                    </p>
+                    <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-muted); margin-top: 1rem;">
+                        This blending profile highlights how regularized stacking protects predictions. If one base model was overfitted or had high variance, the meta-model would scale down its influence, minimizing the ensemble variance. Stacking provides the highest performance lift when base models produce complementary, uncorrelated error signatures.
+                    </p>
+                </div>
+                <div class="card">
+                    <div class="card-title">Scouting Calibration Rules</div>
+                    <ul style="font-size: 0.9rem; color: var(--text-muted); padding-left: 20px; display: flex; flex-direction: column; gap: 0.8rem;">
+                        <li><strong>Elite Target Threshold:</strong> Predicts if a player is rated Overall $\ge 75$ using only skill attributes.</li>
+                        <li><strong>Zero-Leakage Guarantee:</strong> Preprocessing pipelines (imputers and scalers) were fit strictly on fold splits, preventing future test details from bleeding into training coefficients.</li>
+                        <li><strong>Soft Probabilities:</strong> Base classifier outputs are transferred as continuous probability scores ($[0,1]$) rather than binary integers, maintaining classification certainty.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tab 3: Stacking Concept Architecture Diagram -->
+        <div id="architecture" class="tab-content">
+            <div class="card diagram-card">
+                <div class="card-title">Stacking Architecture & Out-Of-Fold Pipeline</div>
+                <p style="max-width: 800px; font-size: 0.95rem; color: var(--text-muted);">
+                    To train the Level-1 meta-model without causing target leakage, we must generate predictions for the training set such that the base models predict on data they were never trained on. We achieve this manually using K-Fold Out-Of-Fold (OOF) CV.
+                </p>
+                
+                <div class="step-cards">
+                    <div class="step-item">
+                        <div class="step-num">1</div>
+                        <div class="step-title">Fold Splitting</div>
+                        <div class="step-desc">The training dataset is split into 5 equal portions (folds). For each fold, 4 slices are used to train, and 1 slice is held out as the validation set.</div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-num">2</div>
+                        <div class="step-title">Leak-Free Scaling</div>
+                        <div class="step-desc">Crucially, we fit our scaler and imputer ONLY on the 4 training slices, and then apply it to the validation slice. This prevents statistical parameters from leaking.</div>
+                        <div class="step-warn">CRITICAL STEP: Normal pre-scaling violates fold boundaries!</div>
+                    </div>
+                    
+                    <div class="step-item">
+                        <div class="step-num">3</div>
+                        <div class="step-title">OOF Predictions</div>
+                        <div class="step-desc">The base models predict on the validation slice. By looping through all 5 folds, we generate predictions for every training row. These form the input to train Level-1.</div>
+                    </div>
+                </div>
+                
+                <!-- SVG Visualization Flowchart -->
+                <svg class="flowchart-svg" viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Background Grid or elements -->
+                    <rect x="10" y="10" width="980" height="300" rx="15" fill="rgba(255,255,255,0.01)" stroke="rgba(255,255,255,0.03)"/>
+                    
+                    <!-- Input Layer -->
+                    <rect x="40" y="110" width="160" height="80" rx="10" fill="rgba(79, 172, 254, 0.1)" stroke="#4facfe" stroke-width="2"/>
+                    <text x="120" y="150" fill="#fff" font-family="var(--font-display)" font-size="14" font-weight="700" text-anchor="middle">X_train Features</text>
+                    <text x="120" y="170" fill="var(--text-muted)" font-size="10" text-anchor="middle">(7,425 Player Rows)</text>
+                    
+                    <!-- Arrow -->
+                    <line x1="200" y1="150" x2="250" y2="150" stroke="rgba(255,255,255,0.3)" stroke-width="2" marker-end="url(#arrow)"/>
+                    
+                    <!-- Stratified K-Fold CV -->
+                    <rect x="250" y="70" width="180" height="160" rx="10" fill="rgba(0, 242, 258, 0.05)" stroke="#00f2fe" stroke-dasharray="4" stroke-width="2"/>
+                    <text x="340" y="100" fill="#00f2fe" font-family="var(--font-display)" font-size="14" font-weight="700" text-anchor="middle">5-Fold Stratified CV</text>
+                    <text x="340" y="130" fill="var(--text-muted)" font-size="11" text-anchor="middle">Fold 1: Predict Fold 1 Val</text>
+                    <text x="340" y="155" fill="var(--text-muted)" font-size="11" text-anchor="middle">Fold 2: Predict Fold 2 Val</text>
+                    <text x="340" y="180" fill="var(--text-muted)" font-size="11" text-anchor="middle">Fold 3: Predict Fold 3 Val</text>
+                    <text x="340" y="205" fill="var(--text-muted)" font-size="11" text-anchor="middle">...</text>
+                    
+                    <!-- Arrow -->
+                    <line x1="430" y1="150" x2="480" y2="150" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                    
+                    <!-- Level-0 Base Classifiers -->
+                    <g transform="translate(480, 40)">
+                        <rect x="0" y="0" width="220" height="220" rx="10" fill="rgba(255, 255, 255, 0.03)" stroke="rgba(255, 255, 255, 0.1)" stroke-width="2"/>
+                        <text x="110" y="30" fill="#fff" font-family="var(--font-display)" font-size="14" font-weight="700" text-anchor="middle">Level-0 Base Classifiers</text>
+                        
+                        <!-- Base Model 1 -->
+                        <rect x="20" y="55" width="180" height="40" rx="5" fill="#1e293b" stroke="rgba(255,255,255,0.05)"/>
+                        <text x="110" y="80" fill="#f3f4f6" font-size="12" text-anchor="middle">Logistic Regression</text>
+                        
+                        <!-- Base Model 2 -->
+                        <rect x="20" y="110" width="180" height="40" rx="5" fill="#1e293b" stroke="rgba(255,255,255,0.05)"/>
+                        <text x="110" y="135" fill="#f3f4f6" font-size="12" text-anchor="middle">Decision Tree Classifier</text>
+                        
+                        <!-- Base Model 3 -->
+                        <rect x="20" y="165" width="180" height="40" rx="5" fill="#1e293b" stroke="rgba(255,255,255,0.05)"/>
+                        <text x="110" y="190" fill="#f3f4f6" font-size="12" text-anchor="middle">Random Forest Classifier</text>
+                    </g>
+                    
+                    <!-- Arrow -->
+                    <line x1="700" y1="150" x2="750" y2="150" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                    
+                    <!-- Meta Features OOF -->
+                    <rect x="750" y="100" width="100" height="100" rx="10" fill="rgba(159, 74, 226, 0.1)" stroke="#9f4ae2" stroke-width="2"/>
+                    <text x="800" y="145" fill="#9f4ae2" font-family="var(--font-display)" font-size="14" font-weight="700" text-anchor="middle">OOF Preds</text>
+                    <text x="800" y="165" fill="var(--text-muted)" font-size="11" text-anchor="middle">(Meta-Features)</text>
+                    
+                    <!-- Arrow -->
+                    <line x1="850" y1="150" x2="890" y2="150" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+                    
+                    <!-- Level-1 Meta Model -->
+                    <rect x="890" y="110" width="80" height="80" rx="40" fill="linear-gradient(135deg, var(--primary), var(--secondary))" stroke="#4facfe" stroke-width="2"/>
+                    <text x="930" y="145" fill="#0b0f19" font-family="var(--font-display)" font-size="13" font-weight="800" text-anchor="middle">Level-1</text>
+                    <text x="930" y="165" fill="#0b0f19" font-size="10" font-weight="600" text-anchor="middle">Meta LR</text>
+                    
+                    <!-- Definition of Marker -->
+                    <defs>
+                        <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 0 L 10 5 L 0 10 z" fill="rgba(255,255,255,0.5)"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+        
+    </main>
+
+    <script>
+        // Tab switching logic
+        function switchTab(evt, tabId) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Sliders live text display updates
+        function updateVal(sliderId) {
+            const val = document.getElementById(sliderId).value;
+            document.getElementById(sliderId + '_val').innerText = val;
+            runPrediction();
+        }
+
+        // Visual charts carousel logic
+        let currentChartIdx = 0;
+        const totalCharts = 6;
+        
+        function nextChart() {
+            document.getElementById('chart-' + currentChartIdx).classList.remove('active');
+            currentChartIdx = (currentChartIdx + 1) % totalCharts;
+            document.getElementById('chart-' + currentChartIdx).classList.add('active');
+            updateCarouselIndicator();
+        }
+
+        function prevChart() {
+            document.getElementById('chart-' + currentChartIdx).classList.remove('active');
+            currentChartIdx = (currentChartIdx - 1 + totalCharts) % totalCharts;
+            document.getElementById('chart-' + currentChartIdx).classList.add('active');
+            updateCarouselIndicator();
+        }
+
+        function updateCarouselIndicator() {
+            document.getElementById('carousel-ind').innerText = (currentChartIdx + 1) + ' / ' + totalCharts;
+        }
+
+        // Web API fetch call to Flask server
+        function runPrediction() {
+            const data = {
+                age: parseFloat(document.getElementById('age').value),
+                height_cm: parseFloat(document.getElementById('height_cm').value),
+                weight_kg: parseFloat(document.getElementById('weight_kg').value),
+                pace: parseFloat(document.getElementById('pace').value),
+                shooting: parseFloat(document.getElementById('shooting').value),
+                passing: parseFloat(document.getElementById('passing').value),
+                dribbling: parseFloat(document.getElementById('dribbling').value),
+                defending: parseFloat(document.getElementById('defending').value),
+                physic: parseFloat(document.getElementById('physic').value),
+                weak_foot: parseFloat(document.getElementById('weak_foot').value),
+                skill_moves: parseFloat(document.getElementById('skill_moves').value),
+                international_reputation: parseFloat(document.getElementById('international_reputation').value),
+                preferred_foot: document.getElementById('preferred_foot').value,
+                body_type: document.getElementById('body_type').value,
+                model: document.getElementById('model_selector').value
+            };
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(resData => {
+                if (resData.success) {
+                    updateUI(resData);
+                } else {
+                    console.error("Prediction failed:", resData.error);
+                }
+            })
+            .catch(err => console.error("Error connecting to server:", err));
+        }
+
+        // Update the probability gauge and diagnostic meters
+        function updateUI(resData) {
+            const pct = Math.round(resData.probability * 100);
+            
+            // Update percentage text
+            document.getElementById('prob-pct').innerText = pct + '%';
+            
+            // Update selected model label in gauge
+            const selectedModelName = document.getElementById('model_selector').value;
+            document.getElementById('model-lbl').innerText = selectedModelName === 'Stacking Ensemble' ? 'Ensemble' : selectedModelName.split(' ')[0];
+
+            // Update SVG circle stroke dashoffset
+            // Circumference of r=110 is 2 * PI * 110 = 691.15
+            const circumference = 691;
+            const offset = circumference - (resData.probability * circumference);
+            document.getElementById('prob-fill').style.strokeDashoffset = offset;
+
+            // Update Calibration Badge
+            const badgeContainer = document.getElementById('badge-container');
+            if (resData.is_elite === 1) {
+                badgeContainer.innerHTML = '<span class="badge-elite" id="elite-badge">ELITE CALIBER</span>';
+            } else {
+                badgeContainer.innerHTML = '<span class="badge-recruit" id="elite-badge">RECRUIT CLASS</span>';
+            }
+
+            // Update Diagnostic bars
+            const lrPct = Math.round(resData.base_probabilities["Logistic Regression"] * 100);
+            const dtPct = Math.round(resData.base_probabilities["Decision Tree"] * 100);
+            const rfPct = Math.round(resData.base_probabilities["Random Forest"] * 100);
+
+            document.getElementById('lr-val').innerText = lrPct + '%';
+            document.getElementById('lr-fill').style.width = lrPct + '%';
+
+            document.getElementById('dt-val').innerText = dtPct + '%';
+            document.getElementById('dt-fill').style.width = dtPct + '%';
+
+            document.getElementById('rf-val').innerText = rfPct + '%';
+            document.getElementById('rf-fill').style.width = rfPct + '%';
+        }
+
+        // Run initial prediction on load
+        window.onload = function() {
+            runPrediction();
+        }
+    </script>
+</body>
+</html>
