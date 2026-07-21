@@ -775,7 +775,7 @@
                         <label for="model_selector">Model Selector</label>
                         <select id="model_selector" onchange="runPrediction()">
                             <option value="Stacking Ensemble">Stacking Ensemble (Level-1 Blended)</option>
-                            <option value="Random Forest">Random Forest Classifier (Level-0 Base)</option>
+                            <option value="Perceptron">Perceptron Classifier (Level-0 Base)</option>
                             <option value="Decision Tree">Decision Tree Classifier (Level-0 Base)</option>
                             <option value="Logistic Regression">Logistic Regression (Level-0 Base)</option>
                         </select>
@@ -828,10 +828,10 @@
                         
                         <div>
                             <div class="metric-bar-row">
-                                <span class="metric-bar-label">Random Forest Base</span>
-                                <span class="metric-bar-val" id="rf-val">0.0%</span>
+                                <span class="metric-bar-label">Perceptron Base</span>
+                                <span class="metric-bar-val" id="pc-val">0.0%</span>
                             </div>
-                            <div class="metric-track"><div class="metric-fill" id="rf-fill"></div></div>
+                            <div class="metric-track"><div class="metric-fill" id="pc-fill"></div></div>
                         </div>
                     </div>
                 </div>
@@ -846,7 +846,7 @@
                             <img src="/plots/confusion_matrices.png" class="chart-img" id="chart-1" alt="Confusion Matrices">
                             <img src="/plots/roc_curves.png" class="chart-img" id="chart-2" alt="ROC Curves">
                             <img src="/plots/precision_recall_curves.png" class="chart-img" id="chart-3" alt="Precision-Recall Curves">
-                            <img src="/plots/rf_feature_importance.png" class="chart-img" id="chart-4" alt="Feature Importance">
+                            <img src="/plots/pc_feature_importance.png" class="chart-img" id="chart-4" alt="Feature Importance">
                             <img src="/plots/correlation_heatmap.png" class="chart-img" id="chart-5" alt="Correlation Heatmap">
                         </div>
                         
@@ -887,8 +887,18 @@
                                 <td>92.84%</td>
                                 <td>92.84%</td>
                                 <td>0.9775</td>
-                                <td>0.0657s</td>
-                                <td>0.0005s</td>
+                                <td>0.2677s</td>
+                                <td>0.0024s</td>
+                            </tr>
+                            <tr>
+                                <td>Perceptron (Level-0)</td>
+                                <td>89.83%</td>
+                                <td>90.60%</td>
+                                <td>90.03%</td>
+                                <td>90.31%</td>
+                                <td>0.9680</td>
+                                <td>0.2928s</td>
+                                <td>0.0188s</td>
                             </tr>
                             <tr>
                                 <td>Decision Tree (Level-0)</td>
@@ -897,28 +907,18 @@
                                 <td>93.86%</td>
                                 <td>95.20%</td>
                                 <td>0.9826</td>
-                                <td>0.0625s</td>
-                                <td>0.0004s</td>
-                            </tr>
-                            <tr>
-                                <td>Random Forest (Level-0)</td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>1.0000</td>
-                                <td>0.4866s</td>
-                                <td>0.0157s</td>
+                                <td>0.1905s</td>
+                                <td>0.0017s</td>
                             </tr>
                             <tr class="highlight-row">
                                 <td>Stacking Ensemble (Level-1) <span class="badge-metric">Blended</span></td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>99.87%</td>
-                                <td>1.0000</td>
-                                <td>2.9628s</td>
-                                <td>0.0095s</td>
+                                <td>95.89%</td>
+                                <td>95.92%</td>
+                                <td>96.29%</td>
+                                <td>96.11%</td>
+                                <td>0.9938</td>
+                                <td>3.5603s</td>
+                                <td>0.0231s</td>
                             </tr>
                         </tbody>
                     </table>
@@ -929,10 +929,10 @@
                 <div class="card">
                     <div class="card-title">Ensemble Analysis Discussion</div>
                     <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-muted);">
-                        In this classification setup, the base model <strong>Random Forest</strong> achieved an extremely high performance level ($F_1 = 99.87\%$). Because the Random Forest base model was extremely dominant, our Level-1 Logistic Regression meta-model naturally learned to place a heavy coefficient weight (near $1.0$) on the Random Forest predictions, and near-zero weights on the Decision Tree and Logistic Regression outputs.
+                        In this classification setup, our base models achieved complementary performance: <strong>Decision Tree</strong> ($F_1 = 95.20\%$, $AUC = 0.9826$), <strong>Logistic Regression</strong> ($F_1 = 92.84\%$, $AUC = 0.9775$), and <strong>Perceptron</strong> ($F_1 = 90.31\%$, $AUC = 0.9680$). Since the base models have complementary strengths (e.g. Perceptron learns a simple linear partition, Logistic Regression models smooth probabilities, and Decision Tree captures step thresholds), the Level-1 Stacking Meta-model successfully blended their OOF probabilities to achieve a superior performance of <strong>$F_1 = 96.11\%$</strong> and an outstanding <strong>$AUC = 0.9938$</strong>.
                     </p>
                     <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-muted); margin-top: 1rem;">
-                        This blending profile highlights how regularized stacking protects predictions. If one base model was overfitted or had high variance, the meta-model would scale down its influence, minimizing the ensemble variance. Stacking provides the highest performance lift when base models produce complementary, uncorrelated error signatures.
+                        This result clearly demonstrates the power of stacking. By combining models with different architectural biases, the meta-learner assigns coefficients that leverage each model's confidence scores, reducing ensemble variance and boosting classification generalization beyond any individual base model.
                     </p>
                 </div>
                 <div class="card">
@@ -1014,7 +1014,7 @@
                         
                         <!-- Base Model 3 -->
                         <rect x="20" y="165" width="180" height="40" rx="5" fill="#1e293b" stroke="rgba(255,255,255,0.05)"/>
-                        <text x="110" y="190" fill="#f3f4f6" font-size="12" text-anchor="middle">Random Forest Classifier</text>
+                        <text x="110" y="190" fill="#f3f4f6" font-size="12" text-anchor="middle">Perceptron Classifier</text>
                     </g>
                     
                     <!-- Arrow -->
@@ -1150,8 +1150,8 @@
 
             // Update Diagnostic bars
             const lrPct = Math.round(resData.base_probabilities["Logistic Regression"] * 100);
+            const pcPct = Math.round(resData.base_probabilities["Perceptron"] * 100);
             const dtPct = Math.round(resData.base_probabilities["Decision Tree"] * 100);
-            const rfPct = Math.round(resData.base_probabilities["Random Forest"] * 100);
 
             document.getElementById('lr-val').innerText = lrPct + '%';
             document.getElementById('lr-fill').style.width = lrPct + '%';
@@ -1159,8 +1159,8 @@
             document.getElementById('dt-val').innerText = dtPct + '%';
             document.getElementById('dt-fill').style.width = dtPct + '%';
 
-            document.getElementById('rf-val').innerText = rfPct + '%';
-            document.getElementById('rf-fill').style.width = rfPct + '%';
+            document.getElementById('pc-val').innerText = pcPct + '%';
+            document.getElementById('pc-fill').style.width = pcPct + '%';
         }
 
         // Run initial prediction on load
