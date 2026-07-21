@@ -8,9 +8,9 @@ from flask import Flask, request, jsonify, send_from_directory, render_template_
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -23,7 +23,7 @@ app = Flask(__name__)
 # --- Model Training and Data Pipeline Setup ---
 print("Initializing Machine Learning Models for Stacking Dashboard...")
 
-dataset_dir = r"C:\Users\ISUG\.cache\kagglehub\datasets\stefanoleone992\fifa-23-complete-player-dataset\versions\1"
+dataset_dir = Path.home() / ".cache" / "kagglehub" / "datasets" / "stefanoleone992" / "fifa-23-complete-player-dataset" / "versions" / "1"
 path = Path(dataset_dir)
 csv_files = list(path.glob("*.csv"))
 
@@ -84,8 +84,8 @@ for col in categorical_cols:
 
 base_models = {
     "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
-    "Decision Tree": DecisionTreeClassifier(random_state=42, max_depth=6),
-    "Random Forest": RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)
+    "Perceptron": CalibratedClassifierCV(estimator=Perceptron(random_state=42)),
+    "Decision Tree": DecisionTreeClassifier(random_state=42, max_depth=6)
 }
 
 # Define Out-of-Fold generation function
@@ -159,22 +159,22 @@ def predict():
         
         # Get base model predicted probabilities
         lr_prob = trained_base_models["Logistic Regression"].predict_proba(X_proc)[0, 1]
+        pc_prob = trained_base_models["Perceptron"].predict_proba(X_proc)[0, 1]
         dt_prob = trained_base_models["Decision Tree"].predict_proba(X_proc)[0, 1]
-        rf_prob = trained_base_models["Random Forest"].predict_proba(X_proc)[0, 1]
         
         selected_model = data.get("model", "Stacking Ensemble")
         
         if selected_model == "Logistic Regression":
             prob = lr_prob
+        elif selected_model == "Perceptron":
+            prob = pc_prob
         elif selected_model == "Decision Tree":
             prob = dt_prob
-        elif selected_model == "Random Forest":
-            prob = rf_prob
         else:  # Stacking Ensemble
             meta_features = pd.DataFrame([{
                 "Logistic Regression": lr_prob,
-                "Decision Tree": dt_prob,
-                "Random Forest": rf_prob
+                "Perceptron": pc_prob,
+                "Decision Tree": dt_prob
             }])
             prob = meta_model.predict_proba(meta_features)[0, 1]
             
@@ -186,8 +186,8 @@ def predict():
             "is_elite": is_elite,
             "base_probabilities": {
                 "Logistic Regression": float(lr_prob),
-                "Decision Tree": float(dt_prob),
-                "Random Forest": float(rf_prob)
+                "Perceptron": float(pc_prob),
+                "Decision Tree": float(dt_prob)
             }
         })
     except Exception as e:
@@ -202,5 +202,5 @@ def serve_plot(filename):
 
 
 if __name__ == '__main__':
-    print("Starting Flask dashboard server on http://localhost:5000")
-    app.run(debug=False, port=5000)
+    print("Starting Flask dashboard server on http://localhost:8080")
+    app.run(debug=False, port=8080)
