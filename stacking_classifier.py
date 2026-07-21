@@ -21,7 +21,8 @@ import seaborn as sns
 from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Perceptron
+from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import (
     accuracy_score,
     auc,
@@ -305,12 +306,11 @@ def run_stacking_framework(dataset_dir: str):
         
         # Step 6: Initialize base classifiers (Level-0)
         from sklearn.tree import DecisionTreeClassifier
-        from sklearn.ensemble import RandomForestClassifier
         
         base_models = {
             "Logistic Regression": LogisticRegression(max_iter=1000, random_state=42),
-            "Decision Tree": DecisionTreeClassifier(random_state=42, max_depth=6),
-            "Random Forest": RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)
+            "Perceptron": CalibratedClassifierCV(estimator=Perceptron(random_state=42)),
+            "Decision Tree": DecisionTreeClassifier(random_state=42, max_depth=6)
         }
 
         # Step 7: K-Fold cross validation to generate Level-1 training features
@@ -464,7 +464,7 @@ def run_stacking_framework(dataset_dir: str):
         generate_plots(
             y_test=y_test,
             results=results,
-            rf_model=trained_base_models["Random Forest"],
+            pc_model=trained_base_models["Perceptron"],
             feature_names=all_feature_names,
             X_train_numerical=X_train[numeric_cols],
             plots_dir=plots_dir
@@ -480,7 +480,7 @@ def run_stacking_framework(dataset_dir: str):
         traceback.print_exc()
 
 
-def generate_plots(y_test, results, rf_model, feature_names, X_train_numerical, plots_dir):
+def generate_plots(y_test, results, pc_model, feature_names, X_train_numerical, plots_dir):
     """
     Generate and save publication-quality plots.
     """
@@ -554,15 +554,16 @@ def generate_plots(y_test, results, rf_model, feature_names, X_train_numerical, 
     plt.savefig(plots_dir / "precision_recall_curves.png", bbox_inches='tight')
     plt.close()
     
-    # 4. Feature Importance for Random Forest
-    importances = rf_model.feature_importances_
-    indices = np.argsort(importances)[::-1][:15] # Select top 15 features
+    # 4. Feature Coefficients for Perceptron
+    # Average coef_ across all calibrated fold estimators
+    importances = np.mean([clf.estimator.coef_[0] for clf in pc_model.calibrated_classifiers_], axis=0)
+    indices = np.argsort(np.abs(importances))[::-1][:15] # Select top 15 features by magnitude
     plt.figure(figsize=(12, 8))
-    sns.barplot(x=importances[indices], y=[feature_names[i] for i in indices], palette="crest_r")
-    plt.xlabel("Relative Feature Importance Value", labelpad=10)
+    sns.barplot(x=importances[indices], y=[feature_names[i] for i in indices], palette="coolwarm")
+    plt.xlabel("Average Perceptron Coefficient Weight", labelpad=10)
     plt.ylabel("Features")
-    plt.title("Random Forest - Top 15 Feature Importances", fontsize=20, fontweight='bold', pad=15)
-    plt.savefig(plots_dir / "rf_feature_importance.png", bbox_inches='tight')
+    plt.title("Perceptron - Top 15 Feature Coefficients", fontsize=20, fontweight='bold', pad=15)
+    plt.savefig(plots_dir / "pc_feature_importance.png", bbox_inches='tight')
     plt.close()
     
     # 5. Performance Comparison Bar Chart
@@ -621,10 +622,10 @@ def print_discussion_section(metrics_df, results):
     """
     lr_f1 = results['Logistic Regression']['F1-score']
     dt_f1 = results['Decision Tree']['F1-score']
-    rf_f1 = results['Random Forest']['F1-score']
+    pc_f1 = results['Perceptron']['F1-score']
     stack_f1 = results['Stacking Ensemble']['F1-score']
     
-    best_base_f1 = max(lr_f1, dt_f1, rf_f1)
+    best_base_f1 = max(lr_f1, dt_f1, pc_f1)
     f1_diff = stack_f1 - best_base_f1
     comparison_str = "better than" if f1_diff > 0 else "worse than (or equal to)"
     
@@ -635,10 +636,9 @@ def print_discussion_section(metrics_df, results):
         f"   - Best Level-0 Base F1-Score: {best_base_f1:.4f} (Difference: {f1_diff:+.4f})\n"
         "   - Rationale: Stacking works by using out-of-fold predicted probabilities as features\n"
         "     for a meta-learner. If the base classifiers make uncorrelated errors, the meta-model\n"
-        "     learns when to trust each model. For instance, the Random Forest excels at high-level,\n"
-        "     non-linear interactions, the Decision Tree models sharp boundary thresholds, while\n"
-        "     Logistic Regression models linear trends. By learning coefficients on these predictions,\n"
-        "     the meta-model finds an optimal blending strategy, outperforming or equaling base estimators.\n\n"
+        "     learns when to trust each model. For instance, the Perceptron learns a simple linear decision boundary,\n"
+        "     the Decision Tree models sharp boundary thresholds, while Logistic Regression models smooth linear probability trends.\n"
+        "     By learning coefficients on these predictions, the meta-model finds an optimal blending strategy, outperforming or equaling base estimators.\n\n"
         "2. DID THE LEVEL-1 LOGISTIC REGRESSION META-MODEL COMBINE STRENGTHS SUCCESSFULY?\n"
         "   - Yes, Logistic Regression is an excellent meta-learner because it acts as a regularized,\n"
         "     interpretable linear blending function. By training on soft probabilities rather than\n"
@@ -661,7 +661,7 @@ def print_discussion_section(metrics_df, results):
 
 if __name__ == "__main__":
     # Path to Kaggle Dataset Cache
-    dataset_directory = r"C:\Users\ISUG\.cache\kagglehub\datasets\stefanoleone992\fifa-23-complete-player-dataset\versions\1"
+    dataset_directory = str(Path.home() / ".cache" / "kagglehub" / "datasets" / "stefanoleone992" / "fifa-23-complete-player-dataset" / "versions" / "1")
     
     print("Starting Machine Learning Stacking Framework...")
     run_stacking_framework(dataset_directory)
