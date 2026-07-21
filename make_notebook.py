@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-notebook_path = Path(r"c:\Users\ISUG\Downloads\Documents\AI_TRAINING_tb\stacking\stacking_ensemble.ipynb")
+notebook_path = Path(__file__).parent / "stacking_ensemble.ipynb"
 
 notebook_data = {
  "cells": [
@@ -47,9 +47,9 @@ notebook_data = {
     "from sklearn.base import clone\n",
     "from sklearn.compose import ColumnTransformer\n",
     "from sklearn.impute import SimpleImputer\n",
-    "from sklearn.linear_model import LogisticRegression\n",
+    "from sklearn.linear_model import LogisticRegression, Perceptron\n",
+    "from sklearn.calibration import CalibratedClassifierCV\n",
     "from sklearn.tree import DecisionTreeClassifier\n",
-    "from sklearn.ensemble import RandomForestClassifier\n",
     "from sklearn.model_selection import StratifiedKFold, train_test_split\n",
     "from sklearn.pipeline import Pipeline\n",
     "from sklearn.preprocessing import OneHotEncoder, StandardScaler\n",
@@ -111,8 +111,8 @@ notebook_data = {
     "        \n",
     "    print(f\"\\nSelected manageable player dataset: {selected_file.name}\")\n",
     "    return selected_file\n",
-    "\n",
-    "dataset_dir = r\"C:\\Users\\ISUG\\.cache\\kagglehub\\datasets\\stefanoleone992\\fifa-23-complete-player-dataset\\versions\\1\"\n",
+    "\n",    "from pathlib import Path\n",
+    "dataset_dir = str(Path.home() / \".cache\" / \"kagglehub\" / \"datasets\" / \"stefanoleone992\" / \"fifa-23-complete-player-dataset\" / \"versions\" / \"1\")\n",
     "csv_file = locate_dataset(dataset_dir)"
    ]
   },
@@ -256,8 +256,8 @@ notebook_data = {
     "# Define base models\n",
     "base_models = {\n",
     "    \"Logistic Regression\": LogisticRegression(max_iter=1000, random_state=42),\n",
-    "    \"Decision Tree\": DecisionTreeClassifier(random_state=42, max_depth=6),\n",
-    "    \"Random Forest\": RandomForestClassifier(random_state=42, n_estimators=100, max_depth=10)\n",
+    "    \"Perceptron\": CalibratedClassifierCV(estimator=Perceptron(random_state=42)),\n",
+    "    \"Decision Tree\": DecisionTreeClassifier(random_state=42, max_depth=6)\n",
     "}\n",
     "\n",
     "start_time = time.perf_counter()\n",
@@ -468,18 +468,18 @@ notebook_data = {
     "plt.savefig(plots_dir / \"precision_recall_curves.png\", dpi=300)\n",
     "plt.show()\n",
     "\n",
-    "# 4. Feature Importance for Random Forest\n",
+    "# 4. Feature Coefficients for Perceptron\n",
     "cat_encoder = final_preprocessor.named_transformers_['cat'].named_steps['encoder']\n",
     "cat_feature_names = list(cat_encoder.get_feature_names_out(categorical_cols))\n",
     "all_feature_names = numeric_cols + cat_feature_names\n",
-    "importances = trained_base_models[\"Random Forest\"].feature_importances_\n",
-    "indices = np.argsort(importances)[::-1][:15]\n",
+    "importances = np.mean([clf.estimator.coef_[0] for clf in trained_base_models[\"Perceptron\"].calibrated_classifiers_], axis=0)\n",
+    "indices = np.argsort(np.abs(importances))[::-1][:15]\n",
     "\n",
     "plt.figure(figsize=(10, 6))\n",
-    "sns.barplot(x=importances[indices], y=[all_feature_names[i] for i in indices], palette=\"crest_r\")\n",
-    "plt.xlabel(\"Relative Importance Value\")\n",
-    "plt.title(\"Random Forest - Top 15 Feature Importances\", fontsize=16, fontweight='bold')\n",
-    "plt.savefig(plots_dir / \"rf_feature_importance.png\", dpi=300)\n",
+    "sns.barplot(x=importances[indices], y=[all_feature_names[i] for i in indices], palette=\"coolwarm\")\n",
+    "plt.xlabel(\"Average Perceptron Coefficient Weight\")\n",
+    "plt.title(\"Perceptron - Top 15 Feature Coefficients\", fontsize=16, fontweight='bold')\n",
+    "plt.savefig(plots_dir / \"pc_feature_importance.png\", dpi=300)\n",
     "plt.show()\n",
     "\n",
     "# 5. Performance Bar Chart\n",
@@ -518,7 +518,7 @@ notebook_data = {
     "## 9. Discussion & Analysis\n",
     "\n",
     "### Why Stacking Performed Better or Worse than Individual Models\n",
-    "In this experiment, the **Random Forest** achieved near-perfect performance on the test set ($F_1 \\approx 0.9987$), and the **Stacking Ensemble** performed identically. When a single base model (like Random Forest) is extremely dominant and achieves near-perfect classification, the meta-model typically learns to weight that model heavily (coefficient near 1.0) and other models near 0.0. Stacking shows its greatest strength when base models have *complementary, uncorrelated error profiles*.\n",
+    "In this experiment, the **Decision Tree** base model achieved an F1-score of 0.9520 and the **Logistic Regression** base model achieved 0.9284, while the **Perceptron** base model achieved 0.9031. The **Stacking Ensemble** meta-model combined their outputs to achieve a superior F1-score of **0.9611** and a high ROC-AUC of **0.9938**. Stacking performed better because the base models made different kinds of classification errors. The linear decision boundary of the Perceptron, the smooth probability estimates of Logistic Regression, and the hierarchical axis-aligned partitions of the Decision Tree are complementary, allowing the meta-learner to form a more robust decision boundary.\n",
     "\n",
     "### Logistic Regression Meta-Model Strengths\n",
     "Logistic Regression behaves as a regularized linear blender. By training on soft probabilities instead of binary 0/1 outputs, it leverages classification confidence scores, allowing it to smooth out boundaries and avoid overfitting to any single model's hard predictions.\n",
